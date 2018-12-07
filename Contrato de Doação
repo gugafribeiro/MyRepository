@@ -1,0 +1,60 @@
+pragma solidity ^0.4.0;
+
+// (1) na pratica, util para doar para menores sem ter que confiar os bens a um terceiro tutor/curador legal.
+
+/************************************************************
+Contrato de Doação com Encargo de Tempo.
+************************************************************/
+  
+    contract DoacaoComEncargo {
+    address payable dono = msg.sender; // indentifica o dono do contrato.
+    uint PatrimonioParalelo; // refere-se ao valor que deve ser doado.
+    uint dataLancamento = now; // refere-se a data de lancamento do contrato.
+    
+// construtor com variavel local que ajusta o patrimonio a ser depositado em contrato pelo doador.
+    constructor (uint _patrimonio) public {
+        PatrimonioParalelo = _patrimonio;
+    }
+    
+// modificador que estabelece que o valor depositado deve ser igual ao convecionado na doacao.
+    modifier valorIgual (uint _valor) {
+        require (_valor == PatrimonioParalelo, "valor depositado deve ser igual ao convencionado.");
+        _;
+    }
+ 
+// modificador que determina que somento o dono do contrato pode executar determinada funcao.   
+    modifier apenasDono {
+        require (msg.sender == dono, "apenas o dono do contrato pode exercer essa funcao.");
+        _;
+    
+    }
+    
+// modificador que impede o enriquecimento sem causa por razao de pagamentos multiplos sobre um mesmo valor - vedacao ao locupletamento.    
+// previne que se tenha que entrar na justica por uma acao de repeticao de indebito, salva recursos e tempo.
+    modifier prevencaoAoIndebito {
+        uint NaConta; 
+        NaConta = address(this).balance;
+        require (NaConta == PatrimonioParalelo, "o debito esta sendo repetido");// Impede que ocorra repeticao de indebito, nao havendo enriquecimento sem causa.
+        _;
+    }
+                    
+// funcao pela qual se deposita o valor doado.
+    function Depositar () public payable 
+        valorIgual(msg.value) // apicacao do modifier que igualiza valor depositado com o convencionado.
+        prevencaoAoIndebito { // impedimento de repeticao de indebito.
+    }
+    
+                    
+// funcao para o dono retirar valor depositado em contrato.
+    function retirada() public apenasDono() { // apenas o donatario pode executar.
+        dono.transfer(address(this).balance);
+        require (now > dataLancamento + 10 seconds, "a condicao de periodo temporal ainda nao foi cumprida para retirada do valor doado"); // periodo aqui seria referente ao tempo que falta para o menor completar idade capaz, na qual pode retirar o valor doado e gerir com plenas faculdades civis.
+        
+    } 
+    
+// funcao para informar-se quanto ao valor convencionado a ser doado; valor já transferido para o contrato; e data de lancamento deste.    
+    function VerContrato () public view returns (uint doacao, uint ValorNoContrato, uint InitialClock ){ // para ver o patrimonio que deve ser doado.   
+        return (PatrimonioParalelo, (address(this).balance), dataLancamento);  
+    }
+                           
+}
